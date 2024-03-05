@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	openai "github.com/sashabaranov/go-openai"
 )
 
 type Message struct {
@@ -14,8 +18,9 @@ type Message struct {
 }
 
 type model struct {
-	messages  []Message
-	textInput textinput.Model
+	messages    []Message
+	textInput   textinput.Model
+	currentChan chan string
 }
 
 func initialModel() model {
@@ -27,6 +32,55 @@ func initialModel() model {
 
 	return model{
 		textInput: ti,
+	}
+}
+
+type responseMsg string
+
+func waitForActivity(sub chan string) tea.Cmd {
+	return func() tea.Msg {
+		return responseMsg(<-sub)
+	}
+}
+
+func CallOpenAI(m chan string) tea.Cmd {
+	return func() tea.Msg {
+		c := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
+		ctx := context.Background()
+
+		req := openai.ChatCompletionRequest{
+			Model:     openai.GPT3Dot5Turbo,
+			MaxTokens: 20,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: "Lorem ipsum",
+				},
+			},
+			Stream: true,
+		}
+		stream, err := c.CreateChatCompletionStream(ctx, req)
+		if err != nil {
+			fmt.Printf("ChatCompletionStream error: %v\n", err)
+			return nil
+		}
+		defer stream.Close()
+
+		fmt.Printf("Stream response: ")
+		for {
+			response, err := stream.Recv()
+			if errors.Is(err, io.EOF) {
+				fmt.Println("\nStream finished")
+				return nil
+			}
+
+			if err != nil {
+				fmt.Printf("\nStream error: %v\n", err)
+				return nil
+			}
+
+			m <- response.Choices[0].Delta.Content
+		}
 	}
 }
 
@@ -45,11 +99,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				role:    "user",
 			})
 			m.textInput.SetValue("")
-			return m, nil
+			m.currentChan = make(chan string)
+			return m, tea.Batch(waitForActivity(m.currentChan),
+				CallOpenAI(m.currentChan))
 
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
 		}
+	case responseMsg:
+		m.messages = append(m.messages, Message{
+			content: string(msg),
+			role:    "AI",
+		})
+		return m, waitForActivity(m.currentChan)
 	}
 	m.textInput, cmd = m.textInput.Update(msg)
 	return m, cmd
