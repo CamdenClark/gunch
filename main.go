@@ -13,8 +13,8 @@ import (
 )
 
 type Message struct {
-	content string
-	role    string
+	Content string
+	Role    string
 }
 
 type model struct {
@@ -43,21 +43,25 @@ func waitForActivity(sub chan string) tea.Cmd {
 	}
 }
 
-func CallOpenAI(m chan string) tea.Cmd {
+func CallOpenAI(m chan string, messages []Message) tea.Cmd {
+	openaiMessages := make([]openai.ChatCompletionMessage, len(messages))
+	for i := range messages {
+		message := messages[i]
+		openaiMessages[i] = openai.ChatCompletionMessage{
+			Role:    message.Role,
+			Content: message.Content,
+		}
+	}
+
 	return func() tea.Msg {
 		c := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
 		ctx := context.Background()
 
 		req := openai.ChatCompletionRequest{
 			Model:     openai.GPT3Dot5Turbo,
-			MaxTokens: 20,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: "Lorem ipsum",
-				},
-			},
-			Stream: true,
+			MaxTokens: 200,
+			Messages:  openaiMessages,
+			Stream:    true,
 		}
 		stream, err := c.CreateChatCompletionStream(ctx, req)
 		if err != nil {
@@ -95,21 +99,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyEnter:
 			m.messages = append(m.messages, Message{
-				content: m.textInput.Value(),
-				role:    "user",
+				Content: m.textInput.Value(),
+				Role:    "user",
 			})
 			m.textInput.SetValue("")
 			m.currentChan = make(chan string)
 			return m, tea.Batch(waitForActivity(m.currentChan),
-				CallOpenAI(m.currentChan))
+				CallOpenAI(m.currentChan, m.messages))
 
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
 		}
 	case responseMsg:
 		m.messages = append(m.messages, Message{
-			content: string(msg),
-			role:    "AI",
+			Content: string(msg),
+			Role:    "assistant",
 		})
 		return m, waitForActivity(m.currentChan)
 	}
@@ -120,7 +124,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func DrawMessages(messages []Message) string {
 	var s string
 	for _, m := range messages {
-		s += fmt.Sprintf("%s: %s\n", m.role, m.content)
+		s += fmt.Sprintf("%s: %s\n", m.Role, m.Content)
 	}
 	return s
 }
