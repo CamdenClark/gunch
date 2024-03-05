@@ -4,23 +4,29 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type Message struct {
+	content string
+	role    string
+}
+
 type model struct {
-	cursor   int
-	choices  []string
-	selected map[int]struct{}
+	messages  []Message
+	textInput textinput.Model
 }
 
 func initialModel() model {
-	return model{
-		choices: []string{"Buy carrots", "Buy celery", "Buy kohlrabi"},
+	ti := textinput.New()
+	ti.Placeholder = "Pikachu"
+	ti.Focus()
+	ti.CharLimit = 156
+	ti.Width = 20
 
-		// A map which indicates which choices are selected. We're using
-		// the map like a mathematical set. The keys refer to the indexes
-		// of the `choices` slice, above.
-		selected: make(map[int]struct{}),
+	return model{
+		textInput: ti,
 	}
 }
 
@@ -29,52 +35,41 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
+		switch msg.Type {
+		case tea.KeyEnter:
+			m.messages = append(m.messages, Message{
+				content: m.textInput.Value(),
+				role:    "user",
+			})
+			m.textInput.SetValue("")
+			return m, nil
+
+		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-				m.selected[m.cursor] = struct{}{}
-			}
 		}
 	}
+	m.textInput, cmd = m.textInput.Update(msg)
+	return m, cmd
+}
 
-	return m, nil
+func DrawMessages(messages []Message) string {
+	var s string
+	for _, m := range messages {
+		s += fmt.Sprintf("%s: %s\n", m.role, m.content)
+	}
+	return s
 }
 
 func (m model) View() string {
-	s := "What should we buy at the market?\n\n"
-
-	for i, choice := range m.choices {
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
-
-	return s
+	return fmt.Sprintf(
+		"Messages:\n\n%s\n\n%s\n\n%s",
+		DrawMessages(m.messages),
+		m.textInput.View(),
+		"(esc to quit)",
+	) + "\n"
 }
 
 func main() {
