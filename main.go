@@ -70,16 +70,13 @@ func CallOpenAI(m chan string, messages []Message) tea.Cmd {
 		}
 		defer stream.Close()
 
-		fmt.Printf("Stream response: ")
 		for {
 			response, err := stream.Recv()
 			if errors.Is(err, io.EOF) {
-				fmt.Println("\nStream finished")
 				return nil
 			}
 
 			if err != nil {
-				fmt.Printf("\nStream error: %v\n", err)
 				return nil
 			}
 
@@ -111,10 +108,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	case responseMsg:
-		m.messages = append(m.messages, Message{
-			Content: string(msg),
-			Role:    "assistant",
-		})
+		if m.messages[len(m.messages)-1].Role != "assistant" {
+			m.messages = append(m.messages, Message{
+				Content: string(msg),
+				Role:    "assistant",
+			})
+		} else {
+			m.messages[len(m.messages)-1].Content += string(msg)
+		}
 		return m, waitForActivity(m.currentChan)
 	}
 	m.textInput, cmd = m.textInput.Update(msg)
