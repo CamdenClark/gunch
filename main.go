@@ -6,10 +6,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	openai "github.com/sashabaranov/go-openai"
+
+	"golang.org/x/term"
 )
 
 type Message struct {
@@ -131,12 +135,30 @@ func DrawMessages(messages []Message) string {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf(
-		"Messages:\n\n%s\n\n%s\n\n%s",
-		DrawMessages(m.messages),
-		m.textInput.View(),
-		"(esc to quit)",
-	) + "\n"
+	width, height, _ := term.GetSize(int(os.Stdout.Fd()))
+
+	docStyle := lipgloss.NewStyle().
+		Width(width).Height(height)
+
+	filesStyle := lipgloss.NewStyle().
+		Align(lipgloss.Left).
+		Foreground(lipgloss.Color("#FAFAFA")).
+		Border(lipgloss.RoundedBorder()).
+		Width(30)
+
+	historyStyle := lipgloss.NewStyle().
+		Align(lipgloss.Left).
+		Foreground(lipgloss.Color("#FAFAFA")).
+		Border(lipgloss.RoundedBorder()).
+		Width(width - 34).
+		Height(height - 4)
+
+	doc := strings.Builder{}
+	doc.WriteString(lipgloss.JoinHorizontal(0, filesStyle.Render("Files"), historyStyle.Render(DrawMessages(m.messages))))
+	doc.WriteString("\n")
+
+	doc.WriteString(m.textInput.View())
+	return fmt.Sprint(docStyle.Render(doc.String()))
 }
 
 func main() {
