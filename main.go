@@ -36,6 +36,7 @@ func initialModel() model {
 
 	return model{
 		textInput: ti,
+		messages:  []Message{},
 	}
 }
 
@@ -151,7 +152,7 @@ func (m model) View() string {
 	inputStyle := lipgloss.NewStyle().
 		Align(lipgloss.Left).
 		Foreground(lipgloss.Color("#FAFAFA")).
-		Border(lipgloss.RoundedBorder()).
+		Border(lipgloss.NormalBorder()).
 		Width(width - (2 * borderWidth))
 
 	leftColumn := lipgloss.JoinVertical(0,
