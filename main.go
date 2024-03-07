@@ -151,13 +151,18 @@ func (m model) View() string {
 		Foreground(lipgloss.Color("#FAFAFA")).
 		Border(lipgloss.RoundedBorder()).
 		Width(width - 34).
-		Height(height - 4)
+		Height(height - 6)
+
+	inputStyle := lipgloss.NewStyle().
+		Align(lipgloss.Left).
+		Foreground(lipgloss.Color("#FAFAFA")).
+		Border(lipgloss.RoundedBorder()).
+		Width(width - 2)
 
 	doc := strings.Builder{}
 	doc.WriteString(lipgloss.JoinHorizontal(0, filesStyle.Render("Files"), historyStyle.Render(DrawMessages(m.messages))))
 	doc.WriteString("\n")
-
-	doc.WriteString(m.textInput.View())
+	doc.WriteString(inputStyle.Render(m.textInput.View()))
 	return fmt.Sprint(docStyle.Render(doc.String()))
 }
 
