@@ -21,22 +21,24 @@ type Message struct {
 	Role    string
 }
 
-type model struct {
+type Model struct {
+	focusedPane string
 	messages    []Message
 	textInput   textinput.Model
 	currentChan chan string
 }
 
-func initialModel() model {
+func initialModel() Model {
 	ti := textinput.New()
 	ti.Placeholder = "Pikachu"
 	ti.Focus()
 	ti.CharLimit = 156
 	ti.Width = 20
 
-	return model{
-		textInput: ti,
-		messages:  []Message{},
+	return Model{
+		textInput:   ti,
+		messages:    []Message{},
+		focusedPane: "input",
 	}
 }
 
@@ -90,11 +92,11 @@ func CallOpenAI(m chan string, messages []Message) tea.Cmd {
 	}
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return tea.SetWindowTitle("Grocery List")
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -135,7 +137,7 @@ func DrawMessages(messages []Message) string {
 	return s
 }
 
-func (m model) View() string {
+func (m Model) View() string {
 	doc := strings.Builder{}
 	width, height, _ := term.GetSize(int(os.Stdout.Fd()))
 
@@ -156,7 +158,7 @@ func (m model) View() string {
 		Width(width - (2 * borderWidth))
 
 	leftColumn := lipgloss.JoinVertical(0,
-		filesStyle.Render("Files"),
+		RenderFiles(),
 		historyStyle.Render("History"))
 	doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, chatStyle.Render(DrawMessages(m.messages))))
 	doc.WriteString("\n")

@@ -44,3 +44,7 @@ var (
 			Border(historyBorder).
 			Width(leftColumnWidth)
 )
+
+func RenderFiles() string {
+	return filesStyle.Render("Files")
+}
