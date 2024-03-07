@@ -135,32 +135,29 @@ func DrawMessages(messages []Message) string {
 }
 
 func (m model) View() string {
+	doc := strings.Builder{}
 	width, height, _ := term.GetSize(int(os.Stdout.Fd()))
 
 	docStyle := lipgloss.NewStyle().
 		Width(width).Height(height)
 
-	filesStyle := lipgloss.NewStyle().
+	chatStyle := lipgloss.NewStyle().
 		Align(lipgloss.Left).
 		Foreground(lipgloss.Color("#FAFAFA")).
-		Border(lipgloss.RoundedBorder()).
-		Width(30)
-
-	historyStyle := lipgloss.NewStyle().
-		Align(lipgloss.Left).
-		Foreground(lipgloss.Color("#FAFAFA")).
-		Border(lipgloss.RoundedBorder()).
-		Width(width - 34).
-		Height(height - 6)
+		Border(lipgloss.NormalBorder()).
+		Width(width - leftColumnWidth - (4 * borderWidth)).
+		Height(height - 5)
 
 	inputStyle := lipgloss.NewStyle().
 		Align(lipgloss.Left).
 		Foreground(lipgloss.Color("#FAFAFA")).
 		Border(lipgloss.RoundedBorder()).
-		Width(width - 2)
+		Width(width - (2 * borderWidth))
 
-	doc := strings.Builder{}
-	doc.WriteString(lipgloss.JoinHorizontal(0, filesStyle.Render("Files"), historyStyle.Render(DrawMessages(m.messages))))
+	leftColumn := lipgloss.JoinVertical(0,
+		filesStyle.Render("Files"),
+		historyStyle.Render("History"))
+	doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, chatStyle.Render(DrawMessages(m.messages))))
 	doc.WriteString("\n")
 	doc.WriteString(inputStyle.Render(m.textInput.View()))
 	return fmt.Sprint(docStyle.Render(doc.String()))
