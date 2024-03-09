@@ -146,26 +146,13 @@ func (m Model) View() string {
 	docStyle := lipgloss.NewStyle().
 		Width(width).Height(height)
 
-	chatStyle := lipgloss.NewStyle().
-		Align(lipgloss.Left).
-		Foreground(lipgloss.Color("#FAFAFA")).
-		Border(lipgloss.NormalBorder()).
-		Width(width - leftColumnWidth - (4 * borderWidth)).
-		Height(height - 5)
-
-	inputStyle := lipgloss.NewStyle().
-		Align(lipgloss.Left).
-		Foreground(lipgloss.Color("#FAFAFA")).
-		Border(lipgloss.NormalBorder()).
-		Width(width - (2 * borderWidth))
-
 	leftColumn := lipgloss.JoinVertical(0,
 		RenderFiles(m.focusedPane == "files"),
 		RenderHistory(m.focusedPane == "history"))
 
-	doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, chatStyle.Render(DrawMessages(m.messages))))
+	doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, RenderChat(m.focusedPane == "chat", width, height, m.messages)))
 	doc.WriteString("\n")
-	doc.WriteString(inputStyle.Render(m.textInput.View()))
+	doc.WriteString(RenderInput(m.focusedPane == "input", width, m.textInput))
 	return fmt.Sprint(docStyle.Render(doc.String()))
 }
 

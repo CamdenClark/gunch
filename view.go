@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -42,6 +43,16 @@ var (
 				Foreground(lipgloss.Color("#FAFAFA")).
 				Border(historyBorder).
 				Width(leftColumnWidth)
+
+	baseChatStyle = lipgloss.NewStyle().
+			Align(lipgloss.Left).
+			Foreground(lipgloss.Color("#FAFAFA")).
+			Border(lipgloss.NormalBorder())
+
+	baseInputStyle = lipgloss.NewStyle().
+			Align(lipgloss.Left).
+			Foreground(lipgloss.Color("#FAFAFA")).
+			Border(lipgloss.NormalBorder())
 )
 
 func RenderFiles(isFocused bool) string {
@@ -61,4 +72,26 @@ func RenderHistory(isFocused bool) string {
 	}
 
 	return historyStyle.Render("History")
+}
+
+func RenderChat(isFocused bool,
+	terminalWidth int,
+	terminalHeight int,
+	messages []Message,
+) string {
+	chatStyle := baseChatStyle.Copy().
+		Width(terminalWidth - leftColumnWidth - (4 * borderWidth)).
+		Height(terminalHeight - 5)
+	if isFocused {
+		chatStyle = chatStyle.BorderForeground(highlightColor)
+	}
+	return chatStyle.Render(DrawMessages(messages))
+}
+
+func RenderInput(isFocused bool, terminalWidth int, input textinput.Model) string {
+	inputStyle := baseInputStyle.Copy().Width(terminalWidth - (2 * borderWidth))
+	if isFocused {
+		inputStyle = inputStyle.BorderForeground(highlightColor)
+	}
+	return inputStyle.Render(input.View())
 }
