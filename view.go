@@ -31,20 +31,34 @@ var (
 		BottomLeft:  "└",
 	}
 
-	filesStyle = lipgloss.NewStyle().
+	baseFilesStyle = lipgloss.NewStyle().
 			Align(lipgloss.Left).
 			Foreground(lipgloss.Color("#FAFAFA")).
 			Border(filesBorder).
-			BorderForeground(highlightColor).
 			Width(leftColumnWidth)
 
-	historyStyle = lipgloss.NewStyle().
-			Align(lipgloss.Left).
-			Foreground(lipgloss.Color("#FAFAFA")).
-			Border(historyBorder).
-			Width(leftColumnWidth)
+	baseHistoryStyle = lipgloss.NewStyle().
+				Align(lipgloss.Left).
+				Foreground(lipgloss.Color("#FAFAFA")).
+				Border(historyBorder).
+				Width(leftColumnWidth)
 )
 
-func RenderFiles() string {
+func RenderFiles(isFocused bool) string {
+	filesStyle := baseFilesStyle.Copy()
+	if isFocused {
+		filesStyle = filesStyle.BorderForeground(highlightColor)
+	}
+
 	return filesStyle.Render("Files")
+}
+
+func RenderHistory(isFocused bool) string {
+	historyStyle := baseHistoryStyle.Copy()
+
+	if isFocused {
+		historyStyle = historyStyle.BorderForeground(highlightColor)
+	}
+
+	return historyStyle.Render("History")
 }

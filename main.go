@@ -160,8 +160,9 @@ func (m Model) View() string {
 		Width(width - (2 * borderWidth))
 
 	leftColumn := lipgloss.JoinVertical(0,
-		RenderFiles(),
-		historyStyle.Render("History"))
+		RenderFiles(m.focusedPane == "files"),
+		RenderHistory(m.focusedPane == "history"))
+
 	doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, chatStyle.Render(DrawMessages(m.messages))))
 	doc.WriteString("\n")
 	doc.WriteString(inputStyle.Render(m.textInput.View()))
