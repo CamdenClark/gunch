@@ -25,6 +25,7 @@ type Model struct {
 	focusedPane string
 	messages    []Message
 	textInput   textinput.Model
+	files       []string
 	currentChan chan string
 }
 
@@ -39,6 +40,7 @@ func initialModel() Model {
 		textInput:   ti,
 		messages:    []Message{},
 		focusedPane: "input",
+		files:       []string{},
 	}
 }
 
