@@ -30,10 +30,10 @@ type Model struct {
 
 func initialModel() Model {
 	ti := textinput.New()
-	ti.Placeholder = "Pikachu"
+	ti.Placeholder = "Enter a message..."
 	ti.Focus()
 	ti.CharLimit = 156
-	ti.Width = 20
+	ti.Width = 40
 
 	return Model{
 		textInput:   ti,
