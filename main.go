@@ -107,6 +107,12 @@ func (m Model) switchPane(pane string) (Model, tea.Cmd) {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyCtrlD {
+			return m, tea.Quit
+		}
+	}
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -129,9 +135,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case tea.KeyRunes:
 				switch string(msg.Runes) {
 				}
-			case tea.KeyCtrlD:
-				return m, tea.Quit
-
 			}
 		case "files":
 			return m, cmd
@@ -150,8 +153,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					CallOpenAI(m.currentChan, m.messages))
 			case tea.KeyEsc:
 				return m.switchPane("chat")
-			case tea.KeyCtrlD:
-				return m, tea.Quit
 			}
 
 			m.textInput, cmd = m.textInput.Update(msg)
