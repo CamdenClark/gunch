@@ -124,8 +124,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.filepicker, cmd = m.filepicker.Update(msg)
 	if m.page == "file-selector" {
 		if didSelect, path := m.filepicker.DidSelectFile(msg); didSelect {
-			m.files = append(m.files, path)
 			m.page = "main"
+			duplicate := false
+			for _, v := range m.files {
+				if v == path {
+					duplicate = true
+					break
+				}
+			}
+
+			if !duplicate {
+				m.files = append(m.files, path)
+			}
+
 		}
 	}
 
