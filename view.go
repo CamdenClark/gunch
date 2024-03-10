@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -55,13 +57,13 @@ var (
 			Border(lipgloss.NormalBorder())
 )
 
-func RenderFiles(isFocused bool) string {
+func RenderFiles(isFocused bool, files []string) string {
 	filesStyle := baseFilesStyle.Copy()
 	if isFocused {
 		filesStyle = filesStyle.BorderForeground(highlightColor)
 	}
 
-	return filesStyle.Render("Files")
+	return filesStyle.Render(strings.Join(files, "\n"))
 }
 
 func RenderHistory(isFocused bool) string {

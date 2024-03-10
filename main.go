@@ -218,7 +218,7 @@ func (m Model) View() string {
 			Width(width).Height(height)
 
 		leftColumn := lipgloss.JoinVertical(0,
-			RenderFiles(m.focusedPane == "files"),
+			RenderFiles(m.focusedPane == "files", m.files),
 			RenderHistory(m.focusedPane == "history"))
 
 		doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, RenderChat(m.focusedPane == "chat", width, height, m.messages)))
