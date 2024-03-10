@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -22,11 +23,13 @@ type Message struct {
 }
 
 type Model struct {
-	window      string
+	page        string
 	focusedPane string
+
 	messages    []Message
 	textInput   textinput.Model
 	files       []string
+	filepicker  filepicker.Model
 	currentChan chan string
 }
 
@@ -37,12 +40,16 @@ func initialModel() Model {
 	ti.CharLimit = 156
 	ti.Width = 40
 
+	filepicker := filepicker.New()
+	// current directory
+
 	return Model{
 		textInput:   ti,
 		messages:    []Message{},
 		focusedPane: "input",
-		window:      "main",
+		page:        "main",
 		files:       []string{},
+		filepicker:  filepicker,
 	}
 }
 
@@ -97,7 +104,7 @@ func CallOpenAI(m chan string, messages []Message) tea.Cmd {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.SetWindowTitle("Grocery List")
+	return m.filepicker.Init()
 }
 
 func (m Model) switchPane(pane string) (Model, tea.Cmd) {
@@ -111,6 +118,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlD {
 			return m, tea.Quit
+		}
+	}
+
+	m.filepicker, cmd = m.filepicker.Update(msg)
+	if m.page == "file-selector" {
+		if didSelect, path := m.filepicker.DidSelectFile(msg); didSelect {
+			m.files = append(m.files, path)
+			m.page = "main"
 		}
 	}
 
@@ -137,6 +152,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "files":
+			switch msg.Type {
+			case tea.KeyRunes:
+				switch string(msg.Runes) {
+				case "a":
+					m.page = "file-selector"
+					m.filepicker.Init()
+
+					return m, cmd
+				}
+			}
 			return m, cmd
 		case "history":
 			return m, cmd
@@ -181,20 +206,27 @@ func DrawMessages(messages []Message) string {
 }
 
 func (m Model) View() string {
-	doc := strings.Builder{}
-	width, height, _ := term.GetSize(int(os.Stdout.Fd()))
+	switch m.page {
+	case "file-selector":
+		return m.filepicker.View()
 
-	docStyle := lipgloss.NewStyle().
-		Width(width).Height(height)
+	case "main":
+		doc := strings.Builder{}
+		width, height, _ := term.GetSize(int(os.Stdout.Fd()))
 
-	leftColumn := lipgloss.JoinVertical(0,
-		RenderFiles(m.focusedPane == "files"),
-		RenderHistory(m.focusedPane == "history"))
+		docStyle := lipgloss.NewStyle().
+			Width(width).Height(height)
 
-	doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, RenderChat(m.focusedPane == "chat", width, height, m.messages)))
-	doc.WriteString("\n")
-	doc.WriteString(RenderInput(m.focusedPane == "input", width, m.textInput))
-	return fmt.Sprint(docStyle.Render(doc.String()))
+		leftColumn := lipgloss.JoinVertical(0,
+			RenderFiles(m.focusedPane == "files"),
+			RenderHistory(m.focusedPane == "history"))
+
+		doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, RenderChat(m.focusedPane == "chat", width, height, m.messages)))
+		doc.WriteString("\n")
+		doc.WriteString(RenderInput(m.focusedPane == "input", width, m.textInput))
+		return fmt.Sprint(docStyle.Render(doc.String()))
+	}
+	return ""
 }
 
 func main() {
