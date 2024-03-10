@@ -22,6 +22,7 @@ type Message struct {
 }
 
 type Model struct {
+	window      string
 	focusedPane string
 	messages    []Message
 	textInput   textinput.Model
@@ -40,6 +41,7 @@ func initialModel() Model {
 		textInput:   ti,
 		messages:    []Message{},
 		focusedPane: "input",
+		window:      "main",
 		files:       []string{},
 	}
 }
@@ -98,23 +100,62 @@ func (m Model) Init() tea.Cmd {
 	return tea.SetWindowTitle("Grocery List")
 }
 
+func (m Model) switchPane(pane string) (Model, tea.Cmd) {
+	m.focusedPane = pane
+	return m, nil
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyEnter:
-			m.messages = append(m.messages, Message{
-				Content: m.textInput.Value(),
-				Role:    "user",
-			})
-			m.textInput.SetValue("")
-			m.currentChan = make(chan string)
-			return m, tea.Batch(waitForActivity(m.currentChan),
-				CallOpenAI(m.currentChan, m.messages))
+		if msg.Type == tea.KeyRunes && m.focusedPane != "input" {
+			switch string(msg.Runes) {
+			case "1":
+				return m.switchPane("files")
+			case "2":
+				return m.switchPane("history")
+			case "3":
+				return m.switchPane("input")
+			case "4":
+				return m.switchPane("chat")
+			}
+		}
 
-		case tea.KeyCtrlC, tea.KeyEsc:
-			return m, tea.Quit
+		switch m.focusedPane {
+		case "chat":
+			switch msg.Type {
+			case tea.KeyRunes:
+				switch string(msg.Runes) {
+				}
+			case tea.KeyCtrlD:
+				return m, tea.Quit
+
+			}
+		case "files":
+			return m, cmd
+		case "history":
+			return m, cmd
+		case "input":
+			switch msg.Type {
+			case tea.KeyEnter:
+				m.messages = append(m.messages, Message{
+					Content: m.textInput.Value(),
+					Role:    "user",
+				})
+				m.textInput.SetValue("")
+				m.currentChan = make(chan string)
+				return m, tea.Batch(waitForActivity(m.currentChan),
+					CallOpenAI(m.currentChan, m.messages))
+			case tea.KeyEsc:
+				return m.switchPane("chat")
+			case tea.KeyCtrlD:
+				return m, tea.Quit
+			}
+
+			m.textInput, cmd = m.textInput.Update(msg)
+			return m, cmd
 		}
 	case responseMsg:
 		if m.messages[len(m.messages)-1].Role != "assistant" {
@@ -127,7 +168,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, waitForActivity(m.currentChan)
 	}
-	m.textInput, cmd = m.textInput.Update(msg)
 	return m, cmd
 }
 
