@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	openai "github.com/sashabaranov/go-openai"
 
-	"golang.org/x/term"
 )
 
 type Message struct {
