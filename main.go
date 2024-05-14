@@ -123,7 +123,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch m.focusedPane {
-		case "chat":
+		case "chat", "input":
 			switch msg.Type {
 			case tea.KeyRunes:
 				switch string(msg.Runes) {
