@@ -116,24 +116,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	m.filepicker, cmd = m.filepicker.Update(msg)
-	if m.page == "file-selector" {
-		if didSelect, path := m.filepicker.DidSelectFile(msg); didSelect {
-			m.page = "main"
-			duplicate := false
-			for _, v := range m.files {
-				if v == path {
-					duplicate = true
-					break
-				}
-			}
-
-			if !duplicate {
-				m.files = append(m.files, path)
-			}
-
-		}
-	}
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -161,11 +143,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.Type {
 			case tea.KeyRunes:
 				switch string(msg.Runes) {
-				case "a":
-					m.page = "file-selector"
-					m.filepicker.Init()
-
-					return m, cmd
 				}
 			}
 			return m, cmd
