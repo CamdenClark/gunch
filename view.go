@@ -29,7 +29,7 @@ func RenderChat(isFocused bool,
 	messages []Message,
 ) string {
 	chatStyle := baseChatStyle.Copy().
-		Width(terminalWidth - (4 * borderWidth)).
+		Width(terminalWidth - (2 * borderWidth)).
 		Height(terminalHeight - 5)
 	if isFocused {
 		chatStyle = chatStyle.BorderForeground(highlightColor)
