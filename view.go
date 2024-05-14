@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
@@ -30,7 +29,7 @@ func RenderChat(isFocused bool,
 	messages []Message,
 ) string {
 	chatStyle := baseChatStyle.Copy().
-		Width(terminalWidth - leftColumnWidth - (4 * borderWidth)).
+		Width(terminalWidth - (4 * borderWidth)).
 		Height(terminalHeight - 5)
 	if isFocused {
 		chatStyle = chatStyle.BorderForeground(highlightColor)
