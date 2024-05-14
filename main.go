@@ -28,7 +28,6 @@ type Model struct {
 	messages    []Message
 	textInput   textinput.Model
 	files       []string
-	filepicker  filepicker.Model
 	currentChan chan string
 }
 
@@ -39,8 +38,6 @@ func initialModel() Model {
 	ti.CharLimit = 156
 	ti.Width = 40
 
-	filepicker := filepicker.New()
-	// current directory
 
 	return Model{
 		textInput:   ti,
@@ -48,7 +45,6 @@ func initialModel() Model {
 		focusedPane: "input",
 		page:        "main",
 		files:       []string{},
-		filepicker:  filepicker,
 	}
 }
 
@@ -103,7 +99,7 @@ func CallOpenAI(m chan string, messages []Message) tea.Cmd {
 }
 
 func (m Model) Init() tea.Cmd {
-	return m.filepicker.Init()
+	return nil
 }
 
 func (m Model) switchPane(pane string) (Model, tea.Cmd) {
@@ -217,8 +213,6 @@ func DrawMessages(messages []Message) string {
 
 func (m Model) View() string {
 	switch m.page {
-	case "file-selector":
-		return m.filepicker.View()
 
 	case "main":
 		doc := strings.Builder{}
