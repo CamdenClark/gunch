@@ -27,7 +27,6 @@ type Model struct {
 
 	messages    []Message
 	textInput   textinput.Model
-	files       []string
 	currentChan chan string
 }
 
@@ -44,7 +43,6 @@ func initialModel() Model {
 		messages:    []Message{},
 		focusedPane: "input",
 		page:        "main",
-		files:       []string{},
 	}
 }
 
@@ -121,14 +119,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyRunes && m.focusedPane != "input" {
 			switch string(msg.Runes) {
-			case "1":
-				return m.switchPane("files")
-			case "2":
-				return m.switchPane("history")
-			case "3":
+			case "1", "2", "3", "4":
 				return m.switchPane("input")
-			case "4":
-				return m.switchPane("chat")
 			}
 		}
 
@@ -139,15 +131,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				switch string(msg.Runes) {
 				}
 			}
-		case "files":
-			switch msg.Type {
-			case tea.KeyRunes:
-				switch string(msg.Runes) {
-				}
-			}
-			return m, cmd
-		case "history":
-			return m, cmd
 		case "input":
 			switch msg.Type {
 			case tea.KeyEnter:
@@ -199,8 +182,7 @@ func (m Model) View() string {
 			Width(width).Height(height)
 
 		leftColumn := lipgloss.JoinVertical(0,
-			RenderFiles(m.focusedPane == "files", m.files),
-			RenderHistory(m.focusedPane == "history"))
+			"")
 
 		doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, RenderChat(m.focusedPane == "chat", width, height, m.messages)))
 		doc.WriteString("\n")

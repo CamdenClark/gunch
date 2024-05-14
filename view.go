@@ -57,24 +57,6 @@ var (
 			Border(lipgloss.NormalBorder())
 )
 
-func RenderFiles(isFocused bool, files []string) string {
-	filesStyle := baseFilesStyle.Copy()
-	if isFocused {
-		filesStyle = filesStyle.BorderForeground(highlightColor)
-	}
-
-	return filesStyle.Render(strings.Join(files, "\n"))
-}
-
-func RenderHistory(isFocused bool) string {
-	historyStyle := baseHistoryStyle.Copy()
-
-	if isFocused {
-		historyStyle = historyStyle.BorderForeground(highlightColor)
-	}
-
-	return historyStyle.Render("History")
-}
 
 func RenderChat(isFocused bool,
 	terminalWidth int,
