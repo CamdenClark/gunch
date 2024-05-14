@@ -182,7 +182,7 @@ func (m Model) View() string {
 		leftColumn := lipgloss.JoinVertical(0,
 			"")
 
-		doc.WriteString(lipgloss.JoinHorizontal(0, leftColumn, RenderChat(m.focusedPane == "chat", width, height, m.messages)))
+		doc.WriteString(RenderChat(m.focusedPane == "chat", width, height, m.messages))
 		doc.WriteString("\n")
 		doc.WriteString(RenderInput(m.focusedPane == "input", width, m.textInput))
 		return fmt.Sprint(docStyle.Render(doc.String()))
