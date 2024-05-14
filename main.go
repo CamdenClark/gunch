@@ -123,7 +123,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch m.focusedPane {
-		case "chat", "input":
+		case "chat":
 			switch msg.Type {
 			case tea.KeyRunes:
 				switch string(msg.Runes) {
@@ -179,8 +179,6 @@ func (m Model) View() string {
 		docStyle := lipgloss.NewStyle().
 			Width(width).Height(height)
 
-		leftColumn := lipgloss.JoinVertical(0,
-			"")
 
 		doc.WriteString(RenderChat(m.focusedPane == "chat", width, height, m.messages))
 		doc.WriteString("\n")
