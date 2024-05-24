@@ -25,9 +25,10 @@ type Model struct {
 	page        string
 	focusedPane string
 
-	currentChan chan string
-	messages    []Message
-	textInput   textinput.Model
+	currentStream chan string
+	cancelSignal  chan struct{}
+	messages      []Message
+	textInput     textinput.Model
 }
 
 func initialModel() Model {
@@ -38,9 +39,10 @@ func initialModel() Model {
 	ti.Width = 40
 
 	return Model{
-		textInput: ti,
-		messages:  []Message{},
-		page:      "main",
+		textInput:    ti,
+		messages:     []Message{},
+		page:         "main",
+		cancelSignal: make(chan struct{}),
 	}
 }
 
@@ -48,11 +50,17 @@ type responseMsg string
 
 func waitForActivity(sub chan string) tea.Cmd {
 	return func() tea.Msg {
-		return responseMsg(<-sub)
+		select {
+		case response := <-sub:
+			return responseMsg(response)
+		}
 	}
 }
 
-func CallOpenAI(m chan string, messages []Message) tea.Cmd {
+func CallOpenAI(currentStream chan string,
+	cancelSignal chan struct{},
+	messages []Message,
+) tea.Cmd {
 	openaiMessages := make([]openai.ChatCompletionMessage, len(messages))
 	for i := range messages {
 		message := messages[i]
@@ -80,16 +88,21 @@ func CallOpenAI(m chan string, messages []Message) tea.Cmd {
 		defer stream.Close()
 
 		for {
-			response, err := stream.Recv()
-			if errors.Is(err, io.EOF) {
+			select {
+			case <-cancelSignal:
 				return nil
-			}
+			default:
+				response, err := stream.Recv()
+				if errors.Is(err, io.EOF) {
+					return nil
+				}
 
-			if err != nil {
-				return nil
-			}
+				if err != nil {
+					return nil
+				}
 
-			m <- response.Choices[0].Delta.Content
+				currentStream <- response.Choices[0].Delta.Content
+			}
 		}
 	}
 }
@@ -98,27 +111,32 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
+func SendCancelSignal(cancelSignal chan struct{}) tea.Cmd {
+	return func() tea.Msg {
+		return nil
+	}
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlD {
-			return m, tea.Quit
-		}
-	}
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
+		case tea.KeyCtrlD:
+			return m, tea.Quit
+		case tea.KeyCtrlC:
+			m.cancelSignal <- struct{}{}
+			return m, cmd
 		case tea.KeyEnter:
 			m.messages = append(m.messages, Message{
 				Content: m.textInput.Value(),
 				Role:    "user",
 			})
 			m.textInput.SetValue("")
-			m.currentChan = make(chan string)
-			return m, tea.Batch(waitForActivity(m.currentChan),
-				CallOpenAI(m.currentChan, m.messages))
+			m.currentStream = make(chan string)
+			return m, tea.Batch(waitForActivity(m.currentStream),
+				CallOpenAI(m.currentStream, m.cancelSignal, m.messages))
 		}
 
 		m.textInput, cmd = m.textInput.Update(msg)
@@ -133,7 +151,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.messages[len(m.messages)-1].Content += string(msg)
 		}
-		return m, waitForActivity(m.currentChan)
+		return m, waitForActivity(m.currentStream)
 	}
 	return m, cmd
 }
