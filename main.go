@@ -7,13 +7,13 @@ import (
 	"io"
 	"os"
 	"strings"
+
 	"golang.org/x/term"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	openai "github.com/sashabaranov/go-openai"
-
 )
 
 type Message struct {
@@ -25,9 +25,9 @@ type Model struct {
 	page        string
 	focusedPane string
 
+	currentChan chan string
 	messages    []Message
 	textInput   textinput.Model
-	currentChan chan string
 }
 
 func initialModel() Model {
@@ -37,12 +37,10 @@ func initialModel() Model {
 	ti.CharLimit = 156
 	ti.Width = 40
 
-
 	return Model{
-		textInput:   ti,
-		messages:    []Message{},
-		focusedPane: "input",
-		page:        "main",
+		textInput: ti,
+		messages:  []Message{},
+		page:      "main",
 	}
 }
 
@@ -69,8 +67,8 @@ func CallOpenAI(m chan string, messages []Message) tea.Cmd {
 		ctx := context.Background()
 
 		req := openai.ChatCompletionRequest{
-			Model:     openai.GPT3Dot5Turbo,
-			MaxTokens: 200,
+			Model:     openai.GPT4o,
+			MaxTokens: 1000,
 			Messages:  openaiMessages,
 			Stream:    true,
 		}
@@ -100,11 +98,6 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m Model) switchPane(pane string) (Model, tea.Cmd) {
-	m.focusedPane = pane
-	return m, nil
-}
-
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
@@ -114,41 +107,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.Type == tea.KeyRunes && m.focusedPane != "input" {
-			switch string(msg.Runes) {
-			case "1", "2", "3", "4":
-				return m.switchPane("input")
-			}
+		switch msg.Type {
+		case tea.KeyEnter:
+			m.messages = append(m.messages, Message{
+				Content: m.textInput.Value(),
+				Role:    "user",
+			})
+			m.textInput.SetValue("")
+			m.currentChan = make(chan string)
+			return m, tea.Batch(waitForActivity(m.currentChan),
+				CallOpenAI(m.currentChan, m.messages))
 		}
 
-		switch m.focusedPane {
-		case "chat":
-			switch msg.Type {
-			case tea.KeyRunes:
-				switch string(msg.Runes) {
-				}
-			}
-		case "input":
-			switch msg.Type {
-			case tea.KeyEnter:
-				m.messages = append(m.messages, Message{
-					Content: m.textInput.Value(),
-					Role:    "user",
-				})
-				m.textInput.SetValue("")
-				m.currentChan = make(chan string)
-				return m, tea.Batch(waitForActivity(m.currentChan),
-					CallOpenAI(m.currentChan, m.messages))
-			case tea.KeyEsc:
-				return m.switchPane("chat")
-			}
+		m.textInput, cmd = m.textInput.Update(msg)
+		return m, cmd
 
-			m.textInput, cmd = m.textInput.Update(msg)
-			return m, cmd
-		}
 	case responseMsg:
 		if m.messages[len(m.messages)-1].Role != "assistant" {
 			m.messages = append(m.messages, Message{
@@ -173,14 +148,12 @@ func DrawMessages(messages []Message) string {
 
 func (m Model) View() string {
 	switch m.page {
-
 	case "main":
 		doc := strings.Builder{}
 		width, height, _ := term.GetSize(int(os.Stdout.Fd()))
 
 		docStyle := lipgloss.NewStyle().
 			Width(width).Height(height)
-
 
 		doc.WriteString(RenderChat(m.focusedPane == "chat", width, height, m.messages))
 		doc.WriteString("\n")
