@@ -50,10 +50,7 @@ type responseMsg string
 
 func waitForActivity(sub chan string) tea.Cmd {
 	return func() tea.Msg {
-		select {
-		case response := <-sub:
-			return responseMsg(response)
-		}
+		return responseMsg(<-sub)
 	}
 }
 
