@@ -108,12 +108,6 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func SendCancelSignal(cancelSignal chan struct{}) tea.Cmd {
-	return func() tea.Msg {
-		return nil
-	}
-}
-
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
